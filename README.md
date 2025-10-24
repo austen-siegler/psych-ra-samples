@@ -19,12 +19,6 @@ Sample notebooks and materials for psychology RA workflows.
 - **Minimum Wage and Unemployment — Data Analysis Report:** `outputs/minimum_wage_unemployment_analysis_Siegler.docx`  
   GitHub link: https://github.com/GITHUB_USERNAME/psych-ra-samples/blob/main/outputs/minimum_wage_unemployment_analysis_Siegler.docx
 
-## How to publish
-1. Create a new repo on GitHub called **psych-ra-samples** (public).
-2. Upload the contents of this folder (or the ZIP below) via the GitHub web UI.
-3. Replace **GITHUB_USERNAME** in your resume links with your GitHub username.
-
-
 ## Training & Certifications
 - **CITI Human Subjects Research (SBE) — Basic:** *in progress* (Oct 2025 target).  
 - **CITI Good Clinical Practice (GCP) — Basic:** *planned* (if hospital-affiliated placement).  
