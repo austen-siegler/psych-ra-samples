@@ -1,0 +1,99 @@
+---
+title: "Psych RA Notebook 02 — REDCap / Qualtrics Workflow"
+author: "Austen Siegler"
+output: html_document
+---
+
+> Import/clean workflow for survey platforms, including de-identification steps and codebook creation.
+>
+> **How to run:** Replace the `read_csv` paths with your actual export files; Knit.
+
+```r
+# Packages ----
+packages <- c("tidyverse", "janitor", "lubridate", "labelled", "skimr")
+to_install <- packages[!packages %in% installed.packages()[, "Package"]]
+if (length(to_install) > 0) install.packages(to_install)
+lapply(packages, library, character.only = TRUE)
+```
+
+## 1) Mock imports (replace with your file paths)
+
+```r
+# Qualtrics export (CSV) & REDCap export (CSV)
+qualtrics_raw <- tibble::tibble(
+  StartDate = Sys.time() - runif(50, 0, 86400),
+  EndDate   = Sys.time(),
+  RecordedDate = Sys.time(),
+  QID1 = sample(1:5, 50, TRUE),  # Likert
+  QID2 = sample(1:5, 50, TRUE),
+  Email = paste0("user", 1:50, "@example.com"), # PII to drop
+  IPAddress = paste0("192.168.1.", sample(2:200, 50, TRUE)) # PII to drop
+)
+
+redcap_raw <- tibble::tibble(
+  record_id = 1:60,
+  consent = sample(0:1, 60, TRUE, prob = c(.05,.95)),
+  visit_date = as.Date("2025-01-01") + sample(0:200, 60, TRUE),
+  pr_1 = sample(0:3, 60, TRUE),
+  pr_2 = sample(0:3, 60, TRUE),
+  pr_3 = sample(0:3, 60, TRUE),
+  dob = as.Date("1990-01-01") + sample(0:12000, 60, TRUE) # PHI to transform
+)
+```
+
+## 2) De-identification & harmonization
+
+```r
+# Drop direct identifiers from Qualtrics
+qualtrics <- qualtrics_raw %>%
+  clean_names() %>%
+  select(-email, -ip_address)
+
+# Derive age from DOB (then drop DOB)
+redcap <- redcap_raw %>%
+  mutate(age = floor(as.numeric(difftime(Sys.Date(), dob, units = "days"))/365.25)) %>%
+  select(-dob)
+
+# Harmonize names and create labeled factors
+qualtrics <- qualtrics %>%
+  rename(item1 = qid1, item2 = qid2) %>%
+  mutate(across(starts_with("item"), ~factor(., levels = 1:5, labels = c("Strongly disagree","Disagree","Neutral","Agree","Strongly agree"))))
+
+# Join mock datasets (example left_join by record_id if present)
+# Here, we just bind rows for demonstration
+combined <- bind_rows(
+  qualtrics %>% mutate(source = "qualtrics"),
+  redcap %>% mutate(source = "redcap")
+) %>%
+  clean_names()
+```
+
+## 3) Codebook, missingness, and tidy outputs
+
+```r
+# Codebook
+skimr::skim(combined)
+
+# Missingness
+miss <- combined %>% summarise(across(everything(), ~sum(is.na(.))))
+miss
+
+# Save clean outputs
+readr::write_csv(combined, "clean_combined.csv")
+```
+
+## 4) Simple summary table
+
+```r
+combined %>%
+  select(source, age, starts_with("item"), pr_1:pr_3, consent) %>%
+  group_by(source) %>%
+  summarise(across(where(is.numeric), ~mean(., na.rm = TRUE))) %>%
+  janitor::adorn_rounding(digits = 2)
+```
+
+## 5) Session info
+
+```r
+sessionInfo()
+```

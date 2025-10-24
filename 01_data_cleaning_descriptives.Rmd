@@ -1,0 +1,114 @@
+---
+title: "Psych RA Notebook 01 — Data Cleaning & Descriptives"
+author: "Austen Siegler"
+output: html_document
+---
+
+> Reproducible example of: tidy data import, cleaning, scale construction, reliability, descriptives, and a simple group comparison + plot.
+>
+> **How to run:** Open in RStudio (or VS Code + R), install packages below, and click *Knit*.
+
+```r
+# Packages ----
+packages <- c("tidyverse", "janitor", "psych", "broom", "effectsize", "ggplot2")
+to_install <- packages[!packages %in% installed.packages()[, "Package"]]
+if (length(to_install) > 0) install.packages(to_install)
+lapply(packages, library, character.only = TRUE)
+
+set.seed(42)
+```
+
+## 1) Simulate a small study dataset
+
+```r
+n <- 160
+df <- tibble::tibble(
+  id = 1001:(1000 + n),
+  consent = sample(c(1, 1, 1, 0), n, replace = TRUE),             # some non-consent
+  age = round(rnorm(n, 28, 6)),
+  gender = sample(c("Woman","Man","Nonbinary","Prefer not to say"), n, replace = TRUE, prob=c(.45,.45,.08,.02)),
+  condition = sample(c("Control","Treatment"), n, replace = TRUE),
+  # 6-item scale (e.g., PHQ-6 proxy with 1-5 Likert)
+  s1 = sample(1:5, n, replace = TRUE),
+  s2 = sample(1:5, n, replace = TRUE),
+  s3 = sample(1:5, n, replace = TRUE),
+  s4 = sample(1:5, n, replace = TRUE),
+  s5 = sample(1:5, n, replace = TRUE),
+  s6 = sample(1:5, n, replace = TRUE)
+)
+
+# add a duplicate row + a missing to demonstrate cleaning
+df <- bind_rows(df, df[5, ]) %>%
+  mutate(s3 = ifelse(row_number() %% 37 == 0, NA, s3))
+```
+
+## 2) Clean: consent filter, deduplicate, tidy labels
+
+```r
+clean <- df %>%
+  filter(consent == 1) %>%
+  distinct(id, .keep_all = TRUE) %>%
+  clean_names()
+
+# overview
+janitor::tabyl(clean$condition)
+summary(clean$age)
+sum(is.na(clean$s3))
+```
+
+## 3) Build a scale score + check reliability
+
+```r
+scale_items <- clean %>% select(s1:s6)
+alpha_out <- psych::alpha(scale_items)
+alpha_out$total$raw_alpha
+
+clean <- clean %>%
+  mutate(scale_mean = rowMeans(select(., s1:s6), na.rm = TRUE))
+
+# Save alpha to a tidy tibble for reporting
+alpha_tidy <- tibble::tibble(
+  n_items = ncol(scale_items),
+  cronbach_alpha = alpha_out$total$raw_alpha
+)
+alpha_tidy
+```
+
+## 4) Descriptives by condition
+
+```r
+desc <- clean %>%
+  group_by(condition) %>%
+  summarise(
+    n = n(),
+    age_mean = mean(age, na.rm = TRUE),
+    scale_mean = mean(scale_mean, na.rm = TRUE),
+    scale_sd = sd(scale_mean, na.rm = TRUE)
+  )
+desc
+```
+
+## 5) Simple comparison (t test) + effect size
+
+```r
+tt <- t.test(scale_mean ~ condition, data = clean, var.equal = TRUE)
+broom::tidy(tt)
+
+effectsize::cohens_d(scale_mean ~ condition, data = clean)
+```
+
+## 6) Quick plot
+
+```r
+ggplot(clean, aes(condition, scale_mean)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.12, alpha = 0.25) +
+  labs(x = "Condition", y = "Scale Mean", title = "Scale scores by condition") +
+  theme_minimal()
+```
+
+## 7) Session info
+
+```r
+sessionInfo()
+```

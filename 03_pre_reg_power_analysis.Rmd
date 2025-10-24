@@ -1,0 +1,75 @@
+---
+title: "Psych RA Notebook 03 — Pre‑Registration Skeleton & Power"
+author: "Austen Siegler"
+output: html_document
+---
+
+> Minimal pre‑registration skeleton + a small power analysis demo.
+>
+> **How to use:** Replace bracketed placeholders with your study details; extend sections as needed.
+
+## Study Overview
+- **Title:** [Study title]
+- **Hypotheses:** [H1: Treatment lowers symptom score vs control]
+- **Primary outcome:** [Scale mean (items s1–s6)]
+- **Design:** [Between-subjects; Control vs Treatment; 1:1 allocation]
+
+## Variables
+- **Inclusion/Exclusion:** [Eligibility criteria; consent]
+- **Outcomes:** [Scale mean]; **Covariates:** [Age, gender]
+- **Manipulation checks:** [If any]
+
+## Analysis Plan
+- **Primary test:** Two-sample t-test (equal variances) on scale_mean
+- **Effect size reporting:** Cohen’s d with 95% CI
+- **Assumptions:** Normality, homogeneity (visual checks)
+
+```r
+# Packages and reproducibility ----
+packages <- c("tidyverse","pwr","effectsize","broom")
+to_install <- packages[!packages %in% installed.packages()[, "Package"]]
+if (length(to_install) > 0) install.packages(to_install)
+lapply(packages, library, character.only = TRUE)
+
+set.seed(123)
+```
+
+### Power (two-sample t-test)
+Assume a small-to-moderate effect (d = 0.4) at α = .05, power = .80.
+
+```r
+pwr::pwr.t.test(d = 0.4, sig.level = 0.05, power = 0.80,
+                type = "two.sample", alternative = "two.sided")
+```
+
+### Simulate and test
+```r
+n_per_group <- 70
+d <- 0.4
+sd <- 1
+mu_c <- 3
+mu_t <- mu_c + d*sd
+
+sim <- tibble::tibble(
+  condition = rep(c("Control","Treatment"), each = n_per_group),
+  scale_mean = c(rnorm(n_per_group, mu_c, sd), rnorm(n_per_group, mu_t, sd))
+)
+
+t_out <- t.test(scale_mean ~ condition, data = sim, var.equal = TRUE)
+broom::tidy(t_out)
+
+effectsize::cohens_d(scale_mean ~ condition, data = sim)
+```
+
+## Data Management
+- **Missingness:** [Define thresholds; handling plan]
+- **De-identification:** [PHI removal strategy; access controls]
+- **Reproducibility:** Store code, metadata, and outputs in versioned folders; knit notebooks to HTML/PDF.
+
+## Deviations
+- **Deviations from plan:** [How you will document and justify]  
+
+## Session Info
+```r
+sessionInfo()
+```
