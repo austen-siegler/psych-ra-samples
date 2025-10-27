@@ -9,7 +9,7 @@ This repo is designed so a PI can skim the structure, open a notebook, and see r
 - `/data/` — mock/simulated or de-identified sample datasets for demos
 - `/outputs/` — rendered analysis artifacts (HTML/CSV/figures) and writing samples
   - Policy Analysis Memorandum (working paper): “Minimum Wage & Unemployment” (`outputs/minimum_wage_unemployment_analysis_Siegler.docx`)
-- `/certs/` — certificate and lisences
+- `/certs/` — certificates and lisences
 - `/thesis/` — published thesis PDF and a short README
 
 ## Open materials (quick links)
