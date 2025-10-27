@@ -1,0 +1,22 @@
+
+---
+title: "03 - Pre-registration & Power (demo)"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(pwr)
+```
+
+We simulate a difference in means and compute a basic power estimate for a two-sample t-test.
+
+```{r}
+set.seed(42)
+n_per_group <- 60
+control <- rnorm(n_per_group, 0.0, 1)
+treat   <- rnorm(n_per_group, 0.35, 1)  # small-to-medium effect
+d <- (mean(treat) - mean(control)) / sd(c(control,treat))
+d
+pwr.t.test(d=d, type="two.sample", sig.level=.05, power=NULL)
+```

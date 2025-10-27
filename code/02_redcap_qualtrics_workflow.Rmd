@@ -1,0 +1,58 @@
+
+---
+title: "02 - REDCap / Qualtrics Workflow"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+if (!dir.exists("../outputs")) dir.create("../outputs", recursive = TRUE)
+```
+
+If REDCap/Qualtrics CSVs are absent, this notebook **simulates both exports** so it runs end-to-end without inputs.
+
+## Load or simulate REDCap & Qualtrics exports
+
+```{r}
+redcap_path <- "../data/mock_participants.csv"
+qualtrics_path <- "../data/mock_participants.csv"
+
+if (file.exists(redcap_path) && file.exists(qualtrics_path)) {
+  redcap <- read_csv(redcap_path) %>%
+    clean_names() %>%
+    transmute(id = record_id, age, sex, group, score_pre)
+  qualtrics <- read_csv(qualtrics_path) %>%
+    clean_names() %>%
+    transmute(id = record_id, score_post)
+} else {
+  set.seed(23)
+  N <- 120
+  redcap <- tibble(
+    id = 1:N,
+    age = round(rnorm(N, 28, 6)),
+    sex = sample(c("Male","Female"), N, replace = TRUE),
+    group = sample(c("Control","Treatment"), N, replace = TRUE),
+    score_pre = round(rnorm(N, 50, 10), 1)
+  )
+  qualtrics <- tibble(
+    id = 1:N,
+    score_post = round(rnorm(N, 55, 10), 1)
+  )
+}
+```
+
+## Merge & QA
+
+```{r}
+merged <- redcap %>% left_join(qualtrics, by="id") %>%
+  mutate(diff = score_post - score_pre) %>%
+  clean_names()
+skimr::skim(merged)
+```
+
+## Output
+
+```{r}
+write_csv(merged, "../outputs/merged_redcap_qualtrics_demo.csv")
+```

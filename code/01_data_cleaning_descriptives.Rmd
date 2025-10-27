@@ -1,0 +1,69 @@
+
+---
+title: "01 - Data Cleaning & Descriptives"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(janitor)
+library(psych)
+library(skimr)
+if (!dir.exists("../outputs")) dir.create("../outputs", recursive = TRUE)
+```
+
+## Load (or simulate) data
+
+```{r}
+path <- "../data/mock_participants.csv"
+if (file.exists(path)) {
+  dat <- read_csv(path) %>% clean_names()
+} else {
+  set.seed(17)
+  N <- 120
+  dat <- tibble(
+    record_id = 1:N,
+    age = round(rnorm(N, 28, 6)),
+    sex = sample(c("Male","Female"), N, replace = TRUE),
+    group = sample(c("Control","Treatment"), N, replace = TRUE),
+    score_pre = round(rnorm(N, 50, 10), 1),
+    score_post = round(rnorm(N, 55, 10), 1)
+  ) %>% clean_names()
+}
+glimpse(dat)
+```
+
+## Clean / recode
+
+```{r}
+dat2 <- dat %>%
+  mutate(
+    id = record_id,
+    sex = factor(sex),
+    group = factor(group),
+    diff = score_post - score_pre
+  ) %>%
+  select(id, age, sex, group, score_pre, score_post, diff)
+head(dat2)
+```
+
+## Descriptives
+
+```{r}
+summary(dat2)
+dat2 %>% group_by(group) %>% summarise(n=n(), mean_diff=mean(diff), sd_diff=sd(diff))
+```
+
+## Simple figure
+
+```{r fig.width=6, fig.height=4}
+ggplot(dat2, aes(x=diff, fill=group)) +
+  geom_histogram(bins=20, alpha=.6, position="identity") +
+  labs(title="Change Scores (post - pre) by Group", x="difference", y="count")
+```
+
+## Save cleaned data
+
+```{r}
+write_csv(dat2, "../outputs/cleaned_mock_participants.csv")
+```
